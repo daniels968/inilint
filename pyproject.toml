@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inilint"
+version = "0.1.0"
+description = "A linter for INI files that reports findings with line numbers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "daniels968" }]
+
+[project.scripts]
+inilint = "inilint.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["inilint*"]
