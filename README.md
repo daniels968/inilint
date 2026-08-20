@@ -44,6 +44,23 @@ example.ini:8: error: key 'logging' appears before any section header [key-outsi
 
 Exit status is 1 if any finding is an `error`, 0 otherwise.
 
+Pass `--format json` to get the findings as a JSON array instead, one object
+per finding (`path`, `line`, `code`, `message`, `severity`):
+
+```
+$ python -m inilint.cli example.ini --format json
+[
+  {
+    "path": "example.ini",
+    "line": 5,
+    "code": "duplicate-section",
+    "message": "section 'server' was already defined on line 1",
+    "severity": "warning"
+  },
+  ...
+]
+```
+
 ## as a library
 
 The checker itself is one pure function: text in, a list of findings out.
