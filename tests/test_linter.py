@@ -49,6 +49,29 @@ class TestLint(unittest.TestCase):
         text = "[server]\nhost: localhost\n"
         self.assertEqual(lint(text), [])
 
+    def test_inline_comment_after_value_is_stripped(self):
+        text = "[server]\nhost = localhost ; the main host\n"
+        self.assertEqual(lint(text), [])
+
+    def test_inline_comment_with_hash_is_stripped(self):
+        text = "[server]\nhost = localhost # the main host\n"
+        self.assertEqual(lint(text), [])
+
+    def test_inline_comment_on_section_header_is_stripped(self):
+        text = "[server] ; the main server\nhost = localhost\n"
+        self.assertEqual(lint(text), [])
+
+    def test_comment_marker_without_leading_space_is_kept_in_value(self):
+        text = "[server]\npath = C:\\a;b\n"
+        findings = lint(text)
+        self.assertEqual(findings, [])
+
+    def test_duplicate_key_still_detected_with_trailing_comment(self):
+        text = "[server]\nhost = a ; first\nhost = b ; second\n"
+        findings = lint(text)
+        dup = next(f for f in findings if f.code == "duplicate-key")
+        self.assertEqual(dup.line, 3)
+
     def test_lint_does_not_mutate_its_input(self):
         text = "[server]\nhost = localhost\n"
         before = text

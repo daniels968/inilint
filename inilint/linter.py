@@ -14,6 +14,9 @@ _SECTION_RE = re.compile(r"^\s*\[(?P<name>[^]]*)\]\s*$")
 # a key/value line: anything before the first '=' or ':' that isn't itself
 # one of those separators, then the separator, then the (possibly empty) value
 _KEY_VALUE_RE = re.compile(r"^\s*(?P<key>[^=:\s][^=:]*)\s*[=:]\s*(?P<value>.*)$")
+# an inline comment has to be set off by whitespace, so `path = C:\a;b` keeps
+# its semicolon but `path = C:\a ; note` does not
+_INLINE_COMMENT_RE = re.compile(r"\s+[;#].*$")
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,9 @@ def lint(text: str) -> list[Finding]:
         if _BLANK_RE.match(raw_line) or _COMMENT_RE.match(raw_line):
             continue
 
-        section_match = _SECTION_RE.match(raw_line)
+        line = _INLINE_COMMENT_RE.sub("", raw_line)
+
+        section_match = _SECTION_RE.match(line)
         if section_match:
             name = section_match.group("name").strip()
             if not name:
@@ -58,7 +63,7 @@ def lint(text: str) -> list[Finding]:
             current_section = name
             continue
 
-        kv_match = _KEY_VALUE_RE.match(raw_line)
+        kv_match = _KEY_VALUE_RE.match(line)
         if kv_match:
             key = kv_match.group("key").strip()
             if current_section is None:

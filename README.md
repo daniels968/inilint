@@ -24,6 +24,12 @@ inilint just checks the text and tells you the line number.
 - `empty-section-name` - a header like `[]` with nothing inside the brackets
 - `malformed-line` - a line that isn't blank, a comment, a section header, or a key/value pair
 
+A `;` or `#` after a value is treated as an inline comment and ignored, as
+long as it's set off from the value by whitespace: `host = localhost ; the
+main one` has no `duplicate-key` or `malformed-line` surprise waiting in it.
+Without that leading space it's just part of the value, so a Windows path
+like `path = C:\tools;C:\bin` is left alone.
+
 ## usage
 
 ```
