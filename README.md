@@ -67,6 +67,30 @@ $ python -m inilint.cli example.ini --format json
 ]
 ```
 
+## disabling checks
+
+Pass `--disable CODE` to turn off one check, or pass it more than once to
+turn off several:
+
+```
+$ python -m inilint.cli example.ini --disable duplicate-section --disable malformed-line
+```
+
+For a standing configuration, put a JSON config file next to the file
+you're checking and pass its path with `--config`, or name it
+`.inilintrc.json` in the current directory and it's picked up automatically:
+
+```json
+{
+  "disable": ["duplicate-section"]
+}
+```
+
+An unknown code in either place is an error rather than a silent no-op.
+Disabling a check only removes it from the output; the linter still tracks
+sections and keys underneath, so e.g. disabling `empty-section-name`
+doesn't change whether later keys count as inside or outside a section.
+
 ## as a library
 
 The checker itself is one pure function: text in, a list of findings out.
@@ -82,8 +106,8 @@ for f in findings:
 
 ## status
 
-Early. The checks above cover the common ways an INI file goes wrong, but
-there's no config for which checks to run, and no handling yet for
+Early. The checks above cover the common ways an INI file goes wrong, and
+individual checks can now be turned off, but there's no handling yet for
 multi-line values or the `[section.subsection]` conventions some tools use.
 
 ## license

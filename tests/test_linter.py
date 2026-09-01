@@ -78,6 +78,21 @@ class TestLint(unittest.TestCase):
         lint(text)
         self.assertEqual(text, before)
 
+    def test_disabled_code_is_left_out_of_the_results(self):
+        text = "[server]\nhost = a\n[server]\nhost = b\n"
+        findings = lint(text, disabled=frozenset({"duplicate-section"}))
+        codes = [f.code for f in findings]
+        self.assertNotIn("duplicate-section", codes)
+        self.assertIn("duplicate-key", codes)
+
+    def test_disabling_empty_section_name_does_not_change_later_checks(self):
+        # even with the finding itself suppressed, the header still resets
+        # the current section, so a key right after it is still outside one
+        text = "[]\nhost = localhost\n"
+        findings = lint(text, disabled=frozenset({"empty-section-name"}))
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].code, "key-outside-section")
+
 
 if __name__ == "__main__":
     unittest.main()

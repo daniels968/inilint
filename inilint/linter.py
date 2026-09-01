@@ -27,12 +27,33 @@ class Finding:
     severity: str = "warning"
 
 
-def lint(text: str) -> list[Finding]:
-    """Check INI-formatted text and return every finding, in line order."""
+CODES = frozenset(
+    {
+        "duplicate-section",
+        "duplicate-key",
+        "key-outside-section",
+        "empty-section-name",
+        "malformed-line",
+    }
+)
+
+
+def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
+    """Check INI-formatted text and return every finding, in line order.
+
+    `disabled` is a set of check codes (see CODES) to leave out of the
+    result. Parsing still tracks sections and keys as usual either way, so
+    turning off e.g. empty-section-name doesn't change what counts as the
+    current section for later key-outside-section checks.
+    """
     findings: list[Finding] = []
     current_section: str | None = None
     section_defined_at: dict[str, int] = {}
     keys_defined_at: dict[str, dict[str, int]] = {}
+
+    def report(finding: Finding) -> None:
+        if finding.code not in disabled:
+            findings.append(finding)
 
     for lineno, raw_line in enumerate(text.splitlines(), start=1):
         if _BLANK_RE.match(raw_line) or _COMMENT_RE.match(raw_line):
@@ -44,13 +65,13 @@ def lint(text: str) -> list[Finding]:
         if section_match:
             name = section_match.group("name").strip()
             if not name:
-                findings.append(
+                report(
                     Finding(lineno, "empty-section-name", "section header has no name", "error")
                 )
                 current_section = None
                 continue
             if name in section_defined_at:
-                findings.append(
+                report(
                     Finding(
                         lineno,
                         "duplicate-section",
@@ -67,7 +88,7 @@ def lint(text: str) -> list[Finding]:
         if kv_match:
             key = kv_match.group("key").strip()
             if current_section is None:
-                findings.append(
+                report(
                     Finding(
                         lineno,
                         "key-outside-section",
@@ -78,7 +99,7 @@ def lint(text: str) -> list[Finding]:
                 continue
             keys = keys_defined_at.setdefault(current_section, {})
             if key in keys:
-                findings.append(
+                report(
                     Finding(
                         lineno,
                         "duplicate-key",
@@ -89,7 +110,7 @@ def lint(text: str) -> list[Finding]:
                 keys[key] = lineno
             continue
 
-        findings.append(
+        report(
             Finding(
                 lineno,
                 "malformed-line",

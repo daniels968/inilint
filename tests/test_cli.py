@@ -52,6 +52,36 @@ class TestCli(unittest.TestCase):
         self.assertFalse(out.strip().startswith("["))
         self.assertEqual(exit_code, 0)
 
+    def test_disable_flag_suppresses_a_check(self):
+        path = self._write("[server]\nhost = a\n[server]\nhost = b\n")
+        exit_code, out = self._run(path, "--disable", "duplicate-section")
+        self.assertEqual(out, "")
+        self.assertEqual(exit_code, 0)
+
+    def test_disable_flag_rejects_an_unknown_code(self):
+        path = self._write("[server]\nhost = a\n")
+        with self.assertRaises(SystemExit):
+            main([path, "--disable", "not-a-real-code"])
+
+    def test_config_file_disables_a_check(self):
+        path = self._write("[server]\nhost = a\n[server]\nhost = b\n")
+        handle, config_path = tempfile.mkstemp(suffix=".json")
+        with os.fdopen(handle, "w", encoding="utf-8") as f:
+            json.dump({"disable": ["duplicate-section"]}, f)
+        self.addCleanup(os.remove, config_path)
+        exit_code, out = self._run(path, "--config", config_path)
+        self.assertEqual(out, "")
+        self.assertEqual(exit_code, 0)
+
+    def test_config_file_with_unknown_code_raises(self):
+        path = self._write("[server]\nhost = a\n")
+        handle, config_path = tempfile.mkstemp(suffix=".json")
+        with os.fdopen(handle, "w", encoding="utf-8") as f:
+            json.dump({"disable": ["not-a-real-code"]}, f)
+        self.addCleanup(os.remove, config_path)
+        with self.assertRaises(ValueError):
+            main([path, "--config", config_path])
+
 
 if __name__ == "__main__":
     unittest.main()
