@@ -67,6 +67,24 @@ $ python -m inilint.cli example.ini --format json
 ]
 ```
 
+## multi-line values
+
+A line indented further than the key that owns the value it's continuing is
+treated as part of that value, not a new statement:
+
+```
+[server]
+description = first line
+    second line
+```
+
+is one key (`description`) with no findings. The indentation just has to
+increase relative to the line that set the value - `configparser` uses the
+same rule, so `port = 8080` right after `host = a` at the same indentation
+is a sibling key, not a continuation of `host`. A blank line always ends a
+continuation, and an indented line with no preceding key to attach to is
+still `malformed-line`.
+
 ## disabling checks
 
 Pass `--disable CODE` to turn off one check, or pass it more than once to
@@ -106,9 +124,10 @@ for f in findings:
 
 ## status
 
-Early. The checks above cover the common ways an INI file goes wrong, and
-individual checks can now be turned off, but there's no handling yet for
-multi-line values or the `[section.subsection]` conventions some tools use.
+Early. The checks above cover the common ways an INI file goes wrong,
+individual checks can now be turned off, and indented continuation lines are
+handled, but there's no support yet for the `[section.subsection]`
+conventions some tools use.
 
 ## license
 

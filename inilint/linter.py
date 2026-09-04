@@ -50,13 +50,25 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
     current_section: str | None = None
     section_defined_at: dict[str, int] = {}
     keys_defined_at: dict[str, dict[str, int]] = {}
+    # indentation (leading whitespace count) of the line that set the value
+    # currently being accumulated, or None if there's no value to continue
+    option_indent: int | None = None
 
     def report(finding: Finding) -> None:
         if finding.code not in disabled:
             findings.append(finding)
 
     for lineno, raw_line in enumerate(text.splitlines(), start=1):
-        if _BLANK_RE.match(raw_line) or _COMMENT_RE.match(raw_line):
+        if _BLANK_RE.match(raw_line):
+            option_indent = None
+            continue
+        if _COMMENT_RE.match(raw_line):
+            continue
+
+        indent = len(raw_line) - len(raw_line.lstrip(" \t"))
+        if option_indent is not None and indent > option_indent:
+            # indented further than the key that owns the value in progress:
+            # a continuation line, not a new statement
             continue
 
         line = _INLINE_COMMENT_RE.sub("", raw_line)
@@ -64,6 +76,7 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
         section_match = _SECTION_RE.match(line)
         if section_match:
             name = section_match.group("name").strip()
+            option_indent = None
             if not name:
                 report(
                     Finding(lineno, "empty-section-name", "section header has no name", "error")
@@ -88,6 +101,7 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
         if kv_match:
             key = kv_match.group("key").strip()
             if current_section is None:
+                option_indent = None
                 report(
                     Finding(
                         lineno,
@@ -97,6 +111,7 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
                     )
                 )
                 continue
+            option_indent = indent
             keys = keys_defined_at.setdefault(current_section, {})
             if key in keys:
                 report(
@@ -110,6 +125,7 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
                 keys[key] = lineno
             continue
 
+        option_indent = None
         report(
             Finding(
                 lineno,

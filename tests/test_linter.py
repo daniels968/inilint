@@ -85,6 +85,40 @@ class TestLint(unittest.TestCase):
         self.assertNotIn("duplicate-section", codes)
         self.assertIn("duplicate-key", codes)
 
+    def test_indented_continuation_line_is_not_malformed(self):
+        text = "[server]\ndescription = first line\n    second line\n"
+        self.assertEqual(lint(text), [])
+
+    def test_continuation_does_not_hide_a_later_duplicate_key(self):
+        text = "[server]\nhost = a\n    still part of host\nhost = b\n"
+        findings = lint(text)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].code, "duplicate-key")
+        self.assertEqual(findings[0].line, 4)
+
+    def test_indentation_must_increase_to_count_as_continuation(self):
+        # both keys indented the same amount: the second is a sibling key,
+        # not a continuation of the first
+        text = "[server]\n  host = a\n  port = 8080\n"
+        self.assertEqual(lint(text), [])
+
+    def test_indented_line_with_no_key_to_continue_is_malformed(self):
+        text = "[server]\n    stray indented line\n"
+        findings = lint(text)
+        self.assertEqual(findings[0].code, "malformed-line")
+        self.assertEqual(findings[0].line, 2)
+
+    def test_blank_line_ends_a_continuation(self):
+        text = "[server]\ndescription = first line\n\n    second line\n"
+        findings = lint(text)
+        self.assertEqual(findings[0].code, "malformed-line")
+        self.assertEqual(findings[0].line, 4)
+
+    def test_continuation_line_can_itself_look_like_a_key_value_pair(self):
+        # still indented further than 'description', so still a continuation
+        text = "[server]\ndescription = first line\n    note = keep going\n"
+        self.assertEqual(lint(text), [])
+
     def test_disabling_empty_section_name_does_not_change_later_checks(self):
         # even with the finding itself suppressed, the header still resets
         # the current section, so a key right after it is still outside one
