@@ -109,6 +109,24 @@ Disabling a check only removes it from the output; the linter still tracks
 sections and keys underneath, so e.g. disabling `empty-section-name`
 doesn't change whether later keys count as inside or outside a section.
 
+## as a pre-commit hook
+
+inilint ships a `.pre-commit-hooks.yaml`, so it can be added to another
+project's [pre-commit](https://pre-commit.com/) config directly from this
+repo:
+
+```yaml
+repos:
+  - repo: https://github.com/daniels968/inilint
+    rev: v0.1.0
+    hooks:
+      - id: inilint
+```
+
+pre-commit calls the hook with every staged `.ini` file as a separate
+argument, which is why `inilint` takes one or more paths on the command
+line and reports findings against whichever file each one came from.
+
 ## as a library
 
 The checker itself is one pure function: text in, a list of findings out.
@@ -125,9 +143,10 @@ for f in findings:
 ## status
 
 Early. The checks above cover the common ways an INI file goes wrong,
-individual checks can now be turned off, and indented continuation lines are
-handled, but there's no support yet for the `[section.subsection]`
-conventions some tools use.
+individual checks can now be turned off, indented continuation lines are
+handled, and the tool can run as a pre-commit hook, but there's no support
+yet for the `[section.subsection]` conventions some tools use, and it isn't
+on PyPI yet.
 
 ## license
 

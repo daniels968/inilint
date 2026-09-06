@@ -32,8 +32,8 @@ def _load_disabled_codes(config_path: str | None) -> frozenset[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="inilint", description="Lint an INI file")
-    parser.add_argument("path", help="path to the .ini file to check")
+    parser = argparse.ArgumentParser(prog="inilint", description="Lint one or more INI files")
+    parser.add_argument("paths", nargs="+", metavar="path", help="path to a .ini file to check")
     parser.add_argument(
         "--format",
         choices=["text", "json"],
@@ -57,18 +57,26 @@ def main(argv: list[str] | None = None) -> int:
 
     disabled = _load_disabled_codes(args.config) | frozenset(args.disable)
 
-    with open(args.path, "r", encoding="utf-8") as handle:
-        text = handle.read()
+    payload = []
+    text_lines = []
+    any_error = False
+    for path in args.paths:
+        with open(path, "r", encoding="utf-8") as handle:
+            text = handle.read()
 
-    findings = lint(text, disabled=disabled)
+        for finding in lint(text, disabled=disabled):
+            if finding.severity == "error":
+                any_error = True
+            payload.append({"path": path, **asdict(finding)})
+            text_lines.append(format_finding(path, finding))
+
     if args.format == "json":
-        payload = [{"path": args.path, **asdict(finding)} for finding in findings]
         print(json.dumps(payload, indent=2))
     else:
-        for finding in findings:
-            print(format_finding(args.path, finding))
+        for line in text_lines:
+            print(line)
 
-    return 1 if any(f.severity == "error" for f in findings) else 0
+    return 1 if any_error else 0
 
 
 if __name__ == "__main__":

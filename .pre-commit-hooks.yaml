@@ -1,0 +1,6 @@
+- id: inilint
+  name: inilint
+  description: Lint INI files for duplicate sections/keys, stray keys, and malformed lines.
+  entry: inilint
+  language: python
+  files: \.ini$

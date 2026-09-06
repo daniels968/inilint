@@ -73,6 +73,16 @@ class TestCli(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertEqual(exit_code, 0)
 
+    def test_multiple_paths_are_checked_and_reported_separately(self):
+        clean_path = self._write("[server]\nhost = a\n")
+        broken_path = self._write("host = a\n[server]\n")
+        exit_code, out = self._run(clean_path, broken_path, "--format", "json")
+        findings = json.loads(out)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["path"], broken_path)
+        self.assertEqual(findings[0]["code"], "key-outside-section")
+        self.assertEqual(exit_code, 1)
+
     def test_config_file_with_unknown_code_raises(self):
         path = self._write("[server]\nhost = a\n")
         handle, config_path = tempfile.mkstemp(suffix=".json")
