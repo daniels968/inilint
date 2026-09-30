@@ -22,6 +22,7 @@ inilint just checks the text and tells you the line number.
 - `duplicate-key` - a key is set twice in the same section
 - `key-outside-section` - a `key = value` line appears before any section header
 - `empty-section-name` - a header like `[]` with nothing inside the brackets
+- `empty-subsection-name` - a dotted header with an empty part, like `[a..b]`, `[.a]` or `[a.]`
 - `malformed-line` - a line that isn't blank, a comment, a section header, or a key/value pair
 
 A `;` or `#` after a value is treated as an inline comment and ignored, as
@@ -144,9 +145,9 @@ for f in findings:
 
 Early. The checks above cover the common ways an INI file goes wrong,
 individual checks can now be turned off, indented continuation lines are
-handled, and the tool can run as a pre-commit hook, but there's no support
-yet for the `[section.subsection]` conventions some tools use, and it isn't
-on PyPI yet.
+handled, dotted `[section.subsection]` names are accepted (each full name is
+its own section, and empty parts are flagged), and the tool can run as a
+pre-commit hook. It isn't on PyPI yet.
 
 ## license
 

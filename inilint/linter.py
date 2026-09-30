@@ -33,6 +33,7 @@ CODES = frozenset(
         "duplicate-key",
         "key-outside-section",
         "empty-section-name",
+        "empty-subsection-name",
         "malformed-line",
     }
 )
@@ -83,6 +84,17 @@ def lint(text: str, *, disabled: frozenset[str] = frozenset()) -> list[Finding]:
                 )
                 current_section = None
                 continue
+            # a dotted name is just a name to the duplicate checks, but an
+            # empty piece ([a..b], [.a], [a.]) is nearly always a typo
+            if "." in name and not all(part.strip() for part in name.split(".")):
+                report(
+                    Finding(
+                        lineno,
+                        "empty-subsection-name",
+                        f"section '{name}' has an empty part between dots",
+                        "error",
+                    )
+                )
             if name in section_defined_at:
                 report(
                     Finding(

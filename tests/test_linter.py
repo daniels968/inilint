@@ -127,6 +127,34 @@ class TestLint(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].code, "key-outside-section")
 
+    def test_dotted_section_name_is_clean(self):
+        text = "[server]\nhost = a\n[server.tls]\nhost = b\n"
+        self.assertEqual(lint(text), [])
+
+    def test_dotted_section_is_distinct_from_its_parent(self):
+        text = "[a.b]\nx = 1\n[a.b]\nx = 2\n"
+        codes = [f.code for f in lint(text)]
+        self.assertIn("duplicate-section", codes)
+
+    def test_empty_part_in_dotted_name_is_an_error(self):
+        for header in ("[a..b]", "[.a]", "[a.]", "[a. .b]"):
+            with self.subTest(header=header):
+                findings = lint(header + "\nx = 1\n")
+                self.assertEqual(len(findings), 1)
+                self.assertEqual(findings[0].code, "empty-subsection-name")
+                self.assertEqual(findings[0].severity, "error")
+                self.assertEqual(findings[0].line, 1)
+
+    def test_empty_subsection_name_keeps_the_section_open(self):
+        # the header is flagged but still starts a section, so its keys
+        # are not reported as outside one
+        findings = lint("[a..b]\nx = 1\n")
+        self.assertNotIn("key-outside-section", [f.code for f in findings])
+
+    def test_empty_subsection_name_can_be_disabled(self):
+        findings = lint("[a..b]\nx = 1\n", disabled=frozenset({"empty-subsection-name"}))
+        self.assertEqual(findings, [])
+
 
 if __name__ == "__main__":
     unittest.main()
